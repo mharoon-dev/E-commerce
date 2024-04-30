@@ -4,6 +4,7 @@ import ArrowRightOutlinedIcon from "@mui/icons-material/ArrowRightOutlined";
 import { sliderItems } from "../data";
 import shoppingBoyImg from "/assets/shoppingBoyImg.png";
 import { useState } from "react";
+import { mobile } from "../responsive";
 
 const Container = styled.div`
   width: 100%;
@@ -11,6 +12,8 @@ const Container = styled.div`
   display: flex;
   position: relative;
   overflow: hidden;
+
+  ${mobile({ display: "none" })}
 `;
 
 const Arrow = styled.div`
@@ -78,8 +81,8 @@ const Button = styled.button`
 `;
 
 function Slider() {
-    const [ slideIndex, setSlideIndex] = useState(0);
-  const handleClick = ( direction) => {
+  const [slideIndex, setSlideIndex] = useState(0);
+  const handleClick = (direction) => {
     if (direction === "left") {
       setSlideIndex(slideIndex > 0 ? slideIndex - 1 : 2);
     } else {
@@ -93,19 +96,17 @@ function Slider() {
       </Arrow>
       <Wrapper slideIndex={slideIndex}>
         {sliderItems.map((item) => (
-      <Slide bg={item.bg} key={item.id}>
-          <ImgContainer>
-            <Image src={item.img} alt="" />
-          </ImgContainer>
-          <InfoContainer>
-            <Title>{item.title}</Title>
-            <Desc>
-              {item.desc}
-            </Desc>
-            <Button>SHOW NOW</Button>
-          </InfoContainer>
-        </Slide>
-    ))}
+          <Slide bg={item.bg} key={item.id}>
+            <ImgContainer>
+              <Image src={item.img} alt="" />
+            </ImgContainer>
+            <InfoContainer>
+              <Title>{item.title}</Title>
+              <Desc>{item.desc}</Desc>
+              <Button>SHOW NOW</Button>
+            </InfoContainer>
+          </Slide>
+        ))}
       </Wrapper>
       <Arrow direction="right" onClick={() => handleClick("right")}>
         <ArrowRightOutlinedIcon />
