@@ -4,9 +4,33 @@ import CryptoJS from "crypto-js";
 import jwt from "jsonwebtoken";
 
 export const register = async (req, res) => {
+  // email is already exist
+  const user = await User.findOne({ email: req.body.email });
+  if (user) {
+    return res.status(409).json("Email already exists!");
+  }
+
+  // userName is already exist
+  const userName = await User.findOne({ username: req.body.username });
+  if (userName) {
+    return res.status(409).json("User name already exists!");
+  }
+
+  // check byRefrence
+  const byRefrence = await User.findOne({
+    refrenceCode: req?.body?.byRefrence,
+  });
+  if (!byRefrence) {
+    return res.status(409).json("Refrence code does not exists!");
+  }
+
   const newUser = new User({
     username: req.body.username,
     email: req.body.email,
+    refrenceCode: req?.body?.refrenceCode ? req?.body?.refrenceCode : "",
+    byRefrence: req?.body?.byRefrence ? req?.body?.byRefrence : "",
+    isAdmin: req.body.isAdmin ? req.body.isAdmin : false,
+    img: req.body.img ? req.body.img : "",
     password: CryptoJS.AES.encrypt(
       req.body.password,
       process.env.PASS_SEC
@@ -16,6 +40,19 @@ export const register = async (req, res) => {
   try {
     const savedUser = await newUser.save();
     console.log(savedUser);
+
+    // add this user in refrence code user's array
+    if (req?.body?.byRefrence) {
+      const updateUser = await User.findOneAndUpdate(
+        {
+          refrenceCode: req?.body?.byRefrence,
+        },
+        {
+          $push: { refrenceUsers: savedUser._id },
+        },
+        { new: true }
+      );
+    }
     res.status(200).json(savedUser);
   } catch (err) {
     res.status(500).json(err);
@@ -26,17 +63,19 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const user = await User.findOne({ username: req.body.username });
-    !user && res.status(401).json("Wrong username!");
+    if (!user) {
+      return res.status(401).json("Wrong username!");
+    }
 
     const hashedPassword = CryptoJS.AES.decrypt(
       user.password,
       process.env.PASS_SEC
     );
-
     const originalPassword = hashedPassword.toString(CryptoJS.enc.Utf8);
 
-    originalPassword !== req.body.password &&
-      res.status(401).json("Wrong password!");
+    if (originalPassword !== req.body.password) {
+      return res.status(401).json("Wrong password!");
+    }
 
     const accessToken = jwt.sign(
       {
@@ -48,8 +87,32 @@ export const login = async (req, res) => {
     );
     const { password, ...others } = user._doc;
 
-    res.status(200).json({ ...others, accessToken });
+    return res.status(200).json({ ...others, accessToken });
   } catch (err) {
-    res.status(500).json(err);
+    return res.status(500).json(err);
   }
+};
+
+export const isUserLoggedIn = async (req, res) => {
+  try {
+    const userData = req.user;
+    if (userData) {
+      console.log(userData, "====>> userData");
+      return res.status(200).json({
+        status: true,
+        message: "User is logged in",
+        data: userData,
+      });
+    } else {
+      console.log("User is not logged in");
+    }
+  } catch (error) {
+    return res
+      .status(500) //INTERNALERROR
+      .send(error.message);
+  }
+};
+
+export const googleAuth = (req, res) => {
+  res.send("googleAuth");
 };
